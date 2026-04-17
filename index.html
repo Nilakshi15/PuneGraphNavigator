@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pune Maps - Clean & Simple</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <style>
+        :root {
+            --text-primary: #3c4043;
+            --text-secondary: #70757a;
+            --border: #dadce0;
+            --blue: #1a73e8;
+            --bg-hover: #f1f3f4;
+            --shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body, html { height: 100%; width: 100%; overflow: hidden; background: #f2efe9; }
+        #map { height: 100vh; width: 100vw; z-index: 1; }
+
+        /* Clean Map Styles */
+        .leaflet-tile-container { filter: saturate(1.2) brightness(1.02); }
+
+        /* Left Panel */
+        .left-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 392px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .left-panel > * { pointer-events: auto; }
+
+        /* Search Row (always visible) */
+        .search-bar-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            height: 48px;
+            padding: 0 12px;
+            gap: 8px;
+        }
+        .search-bar-card input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+        .search-bar-card .search-icon { color: var(--text-secondary); font-size: 18px; cursor: pointer; }
+        .toggle-drawer-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 18px;
+            padding: 4px 6px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .toggle-drawer-btn:hover { background: var(--bg-hover); }
+
+        /* Collapsible Drawer */
+        .panel-drawer {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.35s ease, opacity 0.25s ease;
+        }
+        .panel-drawer.open {
+            max-height: 500px;
+            opacity: 1;
+        }
+
+        /* Search Bar */
+        .search-box {
+            display: flex;
+            align-items: center;
+            height: 48px;
+            padding: 0 16px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+        }
+        .search-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            color: var(--text-primary);
+            padding-left: 10px;
+        }
+        .search-icon { color: var(--text-secondary); width: 20px; height: 20px; }
+        .search-divider { width: 1px; height: 24px; background: #eee; margin: 0 12px; }
+
+        /* Drawer Internals */
+        .shortcut-row { display: flex; padding: 8px; justify-content: space-around; border-bottom: 1px solid var(--border); }
+        .shortcut-btn { display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 8px; border-radius: 8px; transition: background 0.2s; flex: 1; }
+        .shortcut-btn:hover { background: var(--bg-hover); }
+        .shortcut-icon { font-size: 20px; margin-bottom: 4px; color: var(--blue); }
+        .shortcut-label { font-size: 11px; color: var(--text-primary); }
+        .chips-scroll { display: flex; padding: 10px 12px; gap: 8px; overflow-x: auto; border-bottom: 1px solid var(--border); -ms-overflow-style: none; }
+        .chips-scroll::-webkit-scrollbar { display: none; }
+        .chip { padding: 7px 14px; background: #fff; border: 1px solid var(--border); border-radius: 20px; font-size: 13px; white-space: nowrap; cursor: pointer; transition: background 0.2s; color: var(--text-primary); }
+        .chip:hover { background: var(--bg-hover); }
+        .explore-content { padding: 12px 16px; }
+        .section-title { font-size: 15px; font-weight: 500; margin-bottom: 10px; color: var(--text-primary); }
+        .place-card { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+        .place-card:hover { background: var(--bg-hover); }
+        .place-icon { width: 36px; height: 36px; background: #f1f3f4; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        .place-info { flex: 1; }
+        .place-name { font-weight: 500; font-size: 14px; margin-bottom: 2px; }
+        .place-meta { font-size: 12px; color: var(--text-secondary); }
+
+        /* Directions Overlay */
+        #directions-overlay { padding: 14px; display: none; }
+        .dir-field-wrap { position: relative; margin-bottom: 8px; }
+        .dir-input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; outline: none; color: var(--text-primary); }
+        .dir-input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(26,115,232,0.15); }
+        /* Suggestions Dropdown */
+        .suggestions-list {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0; right: 0;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 2000;
+            max-height: 180px;
+            overflow-y: auto;
+            display: none;
+        }
+        .suggestions-list.show { display: block; }
+        .suggestion-item {
+            padding: 9px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.15s;
+        }
+        .suggestion-item:hover { background: var(--bg-hover); }
+        .suggestion-item .s-icon { font-size: 14px; color: var(--text-secondary); }
+        .suggestion-item .s-label { flex: 1; }
+        .suggestion-item .s-sub { font-size: 11px; color: var(--text-secondary); }
+        .show-dir-btn { width: 100%; padding: 11px; background: var(--blue); color: #fff; border: none; border-radius: 24px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
+        .show-dir-btn:hover { background: #1557b0; }
+        .show-dir-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* Map Controls */
+        .map-controls { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 1000; }
+        .control-btn { width: 40px; height: 40px; background: #fff; border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; color: #666; transition: background 0.2s; }
+        .control-btn:hover { background: var(--bg-hover); }
+
+        /* Layer Switcher */
+        .layer-switcher { position: absolute; top: 20px; right: 20px; z-index: 1000; background: #fff; border-radius: 8px; box-shadow: var(--shadow); border: 1px solid var(--border); padding: 4px; display: flex; }
+        .layer-btn { padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s; color: var(--text-secondary); }
+        .layer-btn.active { background: #e8f0fe; color: var(--blue); font-weight: 500; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #323232; color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 13px; z-index: 2000; display: none; }
+
+        /* Accessible Location Markers */
+        .loc-marker-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: auto;
+        }
+        .loc-pin {
+            width: 14px;
+            height: 14px;
+            background: #202124;
+            border: 2.5px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+        .loc-pin:hover { transform: scale(1.5); }
+        .loc-label {
+            margin-top: 3px;
+            background: rgba(255,255,255,0.92);
+            color: #202124;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateY(-2px);
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+        }
+        /* Show labels when zoomed in */
+        .zoom-labels .loc-label { opacity: 1; transform: translateY(0); }
+        /* And make pin bigger + darker at zoom */
+        .zoom-labels .loc-pin { background: #111; width: 16px; height: 16px; }
+
+        /* Clusters: invisible, just zoom on click */
+        .marker-cluster-small,
+        .marker-cluster-medium,
+        .marker-cluster-large { background: transparent !important; box-shadow: none !important; }
+        .marker-cluster-small div,
+        .marker-cluster-medium div,
+        .marker-cluster-large div { display: none !important; }
+
+        /* Info Card */
+        .info-card { position: fixed; bottom: -100%; left: 10px; width: 392px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border-radius: 8px; z-index: 1001; transition: bottom 0.3s; padding: 20px; border: 1px solid var(--border); }
+        .info-card.active { bottom: 10px; }
+
+        /* ─── Hide ALL Leaflet Routing Machine UI & error popups ─── */
+        .leaflet-routing-container,
+        .leaflet-routing-geocoders,
+        .leaflet-routing-error,
+        .leaflet-routing-alternatives-container { display: none !important; }
+
+        /* Route info panel styles */
+        .route-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 10px; border-radius: 16px;
+            font-size: 12px; font-weight: 700;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+            cursor: default; white-space: nowrap;
+        }
+        .route-badge.primary { background: #1a73e8; color: #fff; }
+        .route-badge.alt     { background: #ff8c00; color: #fff; }
+
+        /* Direction form header */
+        .dir-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .dir-header h3 {
+            margin: 0;
+        }
+        .dir-close-btn {
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--text-secondary);
+        }
+        .route-info {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .spacer-4px {
+            height: 4px;
+        }
+        .info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .info-header h2 {
+            font-size: 22px;
+            margin: 0;
+            font-weight: 500;
+        }
+        .info-close-btn {
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .info-category {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .info-address {
+            font-size: 14px;
+            color: #444;
+            margin-bottom: 20px;
+        }
+        .info-directions-btn {
+            background: var(--blue);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 24px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .info-directions-btn:hover {
+            background: #1557b0;
+        }
+
+        @media (max-width: 768px) {
+            .left-panel { width: calc(100% - 20px); }
+            .info-card { left: 10px; width: calc(100% - 20px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div class="left-panel">
+        <!-- Always-visible search bar -->
+        <div class="search-bar-card">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Search Pune Maps" id="search-input">
+            <button class="toggle-drawer-btn" id="toggle-drawer" title="Show menu">▼</button>
+        </div>
+
+        <!-- Collapsible Drawer -->
+        <div class="panel-drawer" id="panel-drawer">
+            <div class="shortcut-row">
+                <div class="shortcut-btn" id="sc-directions"><div class="shortcut-icon">🧭</div><div class="shortcut-label">Directions</div></div>
+                <div class="shortcut-btn"><div class="shortcut-icon">🔖</div><div class="shortcut-label">Saved</div></div>
+                <div class="shortcut-btn"><div class="shortcut-icon">📍</div><div class="shortcut-label">Nearby</div></div>
+            </div>
+            <div class="chips-scroll">
+                <div class="chip">🍴 Restaurants</div>
+                <div class="chip">🏨 Hotels</div>
+                <div class="chip">🏥 Hospitals</div>
+                <div class="chip">🏧 ATMs</div>
+                <div class="chip">⛽ Petrol</div>
+            </div>
+            <div class="explore-content">
+                <h3 class="section-title">Explore Pune & PCMC</h3>
+                <div id="featured-list"></div>
+            </div>
+            <div id="directions-overlay">
+                <div class="dir-header">
+                    <h3 class="section-title">Get Directions</h3>
+                    <span class="dir-close-btn" id="close-dir">&times;</span>
+                </div>
+                <div class="dir-field-wrap">
+                    <input type="text" class="dir-input" id="start-node" placeholder="🟢  Start location" autocomplete="off">
+                    <div class="suggestions-list" id="start-suggestions"></div>
+                </div>
+                <div class="dir-field-wrap">
+                    <input type="text" class="dir-input" id="end-node" placeholder="📍  Destination" autocomplete="off">
+                    <div class="suggestions-list" id="end-suggestions"></div>
+                </div>
+                <button class="show-dir-btn" id="show-dir-btn" disabled>Show Directions</button>
+                <div id="route-info" class="route-info"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layer-switcher">
+        <div class="layer-btn active" data-layer="default">Map</div>
+        <div class="layer-btn" data-layer="satellite">Satellite</div>
+        <div class="layer-btn" data-layer="terrain">Terrain</div>
+    </div>
+
+    <div class="map-controls">
+        <div class="control-btn" id="zoom-in">+</div>
+        <div class="control-btn" id="zoom-out">−</div>
+        <div class="spacer-4px"></div>
+        <div class="control-btn" id="my-location">🎯</div>
+    </div>
+
+    <div class="info-card" id="info-card"></div>
+    <div id="toast" class="toast"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script>
+        // --- COMPLETE DATABASE ---
+        const puneAreas = [
+            { name: "Shivajinagar",    lat: 18.5314, lng: 73.8446, type: "area" },
+            { name: "Deccan Gymkhana", lat: 18.5161, lng: 73.8397, type: "area" },
+            { name: "FC Road",         lat: 18.5196, lng: 73.8408, type: "area" },
+            { name: "JM Road",         lat: 18.5189, lng: 73.8364, type: "area" },
+            { name: "Erandwane",       lat: 18.5098, lng: 73.8245, type: "area" },
+            { name: "Karve Nagar",     lat: 18.4934, lng: 73.8198, type: "area" },
+            { name: "Kothrud",         lat: 18.5074, lng: 73.8076, type: "area" },
+            { name: "Warje",           lat: 18.4812, lng: 73.8023, type: "area" },
+            { name: "Bavdhan",         lat: 18.5234, lng: 73.7812, type: "area" },
+            { name: "Pashan",          lat: 18.5423, lng: 73.7934, type: "area" },
+            { name: "Sus Road",        lat: 18.5389, lng: 73.7756, type: "area" },
+            { name: "Aundh",           lat: 18.5589, lng: 73.8076, type: "area" },
+            { name: "Baner",           lat: 18.5590, lng: 73.7893, type: "area" },
+            { name: "Balewadi",        lat: 18.5723, lng: 73.7823, type: "area" },
+            { name: "Wakad",           lat: 18.5987, lng: 73.7612, type: "area" },
+            { name: "Pimple Saudagar", lat: 18.6089, lng: 73.7823, type: "area" },
+            { name: "Viman Nagar",     lat: 18.5667, lng: 73.9145, type: "area" },
+            { name: "Koregaon Park",   lat: 18.5376, lng: 73.8951, type: "area" },
+            { name: "Kharadi",         lat: 18.5512, lng: 73.9451, type: "area" },
+            { name: "Hadapsar",        lat: 18.5089, lng: 73.9258, type: "area" },
+            { name: "Camp Cantonment", lat: 18.5156, lng: 73.8812, type: "area" },
+            { name: "Model Colony",    lat: 18.5389, lng: 73.8423, type: "area" }
+        ];
+
+        const pcmcAreas = [
+            { name: "Pimpri",    lat: 18.6298, lng: 73.7987, type: "area" },
+            { name: "Chinchwad", lat: 18.6489, lng: 73.8023, type: "area" },
+            { name: "Akurdi",    lat: 18.6489, lng: 73.7756, type: "area" },
+            { name: "Nigdi",     lat: 18.6623, lng: 73.7712, type: "area" },
+            { name: "Bhosari",   lat: 18.6334, lng: 73.8423, type: "area" },
+            { name: "Moshi",     lat: 18.6712, lng: 73.8534, type: "area" },
+            { name: "Ravet",     lat: 18.6423, lng: 73.7412, type: "area" }
+        ];
+
+        const allLandmarks = [
+            { name: "Shaniwar Wada",               lat: 18.5195, lng: 73.8553, cat: "Historic Fort",   rating: 4.4, reviews: 52840, address: "Shaniwar Peth, Pune" },
+            { name: "Aga Khan Palace",             lat: 18.5524, lng: 73.9011, cat: "Monument",        rating: 4.5, reviews: 41230, address: "Yerwada, Pune" },
+            { name: "Sinhagad Fort",               lat: 18.3662, lng: 73.7552, cat: "Hill Fort",       rating: 4.6, reviews: 38920, address: "Sinhagad, Pune" },
+            { name: "Dagdusheth Ganpati",          lat: 18.5163, lng: 73.8567, cat: "Temple",          rating: 4.8, reviews: 67890, address: "Budhwar Peth, Pune" },
+            { name: "Savitribai Phule University", lat: 18.5590, lng: 73.8089, cat: "University",      rating: 4.4, reviews: 23450, address: "Ganeshkhind, Pune" },
+            { name: "Fergusson College",           lat: 18.5227, lng: 73.8407, cat: "College",         rating: 4.5, reviews: 18760, address: "FC Road, Pune" },
+            { name: "Phoenix Marketcity",          lat: 18.5598, lng: 73.9231, cat: "Shopping Mall",   rating: 4.4, reviews: 87650, address: "Viman Nagar, Pune" },
+            { name: "Amanora Mall",               lat: 18.5089, lng: 73.9398, cat: "Shopping Mall",   rating: 4.3, reviews: 67840, address: "Hadapsar, Pune" },
+            { name: "Pune Railway Station",        lat: 18.5284, lng: 73.8742, cat: "Railway Station", rating: 3.8, reviews: 54320, address: "Railway Station Rd, Pune" },
+            { name: "Hinjewadi IT Park",           lat: 18.5912, lng: 73.7380, cat: "IT Park",         rating: 4.1, reviews:  8920, address: "Hinjewadi, Pune" },
+            { name: "Ruby Hall Clinic",            lat: 18.5286, lng: 73.8796, cat: "Hospital",        rating: 4.2, reviews: 23450, address: "Sassoon Road, Pune" },
+            { name: "Pimpri Chinchwad Science Park", lat: 18.6312, lng: 73.8023, cat: "Science Park",  rating: 4.1, reviews: 15000, address: "Bhosari, PCMC" },
+            { name: "Appu Ghar",                  lat: 18.6586, lng: 73.7634, cat: "Amusement Park",  rating: 4.2, reviews:  9500, address: "Pradhikaran, PCMC" }
+        ];
+
+        const categoryColors = {
+            'Historic Fort': '#ea4335', 'Monument': '#ea4335', 'Hill Fort': '#ea4335', 'Temple': '#ea4335',
+            'University': '#1a73e8', 'College': '#1a73e8', 'IT Park': '#9c27b0', 'Hospital': '#e91e63',
+            'Shopping Mall': '#fbbc04', 'Railway Station': '#5f6368', 'Nature Park': '#0f9d58', 'area': '#70757a'
+        };
+
+        // --- MAP ENGINE ---
+        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([18.5204, 73.8567], 12);
+
+        const tileLayers = {
+            default:   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, crossOrigin: true }),
+            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
+            terrain:   L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 })
+        };
+        tileLayers.default.addTo(map);
+
+        // Suppress broken-tile error images from OSM
+        Object.values(tileLayers).forEach(layer => {
+            layer.on('tileerror', e => {
+                e.tile.style.display = 'none';
+                e.tile.style.opacity = '0';
+                e.tile.src = '';
+            });
+        });
+
+        // Clustering — invisible (no numbers, just zoom-to-bounds on click)
+        const markerCluster = L.markerClusterGroup({
+            maxClusterRadius: 60,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true,
+            iconCreateFunction: () => L.divIcon({ className: '', html: '<div style="width:1px;height:1px"></div>', iconSize: [1, 1] })
+        }).addTo(map);
+
+        // --- MARKER INJECTION ---
+        function createLocIcon(name) {
+            return L.divIcon({
+                className: '',
+                html: `<div class="loc-marker-wrap"><div class="loc-pin"></div><div class="loc-label">${name}</div></div>`,
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+            });
+        }
+
+        function injectMarkers() {
+            [...puneAreas, ...pcmcAreas, ...allLandmarks].forEach(loc => {
+                const marker = L.marker([loc.lat, loc.lng], { icon: createLocIcon(loc.name) });
+                marker.on('click', () => showInfo(loc));
+                markerCluster.addLayer(marker);
+            });
+        }
+        injectMarkers();
+
+        // Zoom: show labels starting at zoom 12.5
+        map.on('zoomend', () => {
+            if (map.getZoom() >= 12.5) map.getContainer().classList.add('zoom-labels');
+            else map.getContainer().classList.remove('zoom-labels');
+        });
+
+        // --- CORE UI LOGIC ---
+        function showInfo(loc) {
+            const card = document.getElementById('info-card');
+            card.innerHTML = `
+                <div class="info-header">
+                    <h2>${loc.name}</h2>
+                    <span class="info-close-btn" onclick="closeInfo()">&times;</span>
+                </div>
+                <div class="info-category">
+                    ${loc.cat || 'Area'} · ★ ${loc.rating || '4.0'} · (${(loc.reviews || 0).toLocaleString()} reviews)
+                </div>
+                <p class="info-address">${loc.address || (loc.name + ', Pune District')}</p>
+                <button class="info-directions-btn" onclick="startDirections('${loc.name}', ${loc.lat}, ${loc.lng})">Directions</button>
+            `;
+            card.classList.add('active');
+        }
+
+        const closeInfo = () => document.getElementById('info-card').classList.remove('active');
+
+        // Search Implementation
+        const searchInput = document.getElementById('search-input');
+        async function runSearch(query) {
+            if (!query) return;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ' Pune')}&format=json&limit=1`);
+                const data = await res.json();
+                if (data.length > 0) {
+                    map.flyTo([data[0].lat, data[0].lon], 15);
+                    const loc = { name: data[0].display_name.split(',')[0], lat: data[0].lat, lng: data[0].lon, address: data[0].display_name };
+                    showInfo(loc);
+                } else {
+                    showToast('No locations found.');
+                }
+            } catch(e) { /* Silent */ }
+        }
+        searchInput.onkeypress = (e) => { if (e.key === 'Enter') runSearch(searchInput.value); };
+        searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(searchInput.value); });
+        // Search icon inside bar
+        document.querySelector('.search-bar-card .search-icon').onclick = () => runSearch(searchInput.value);
+
+        // Toggle Drawer
+        const drawer = document.getElementById('panel-drawer');
+        const toggleBtn = document.getElementById('toggle-drawer');
+        toggleBtn.onclick = () => {
+            const isOpen = drawer.classList.toggle('open');
+            toggleBtn.textContent = isOpen ? '▲' : '▼';
+        };
+
+        // ---- AUTOCOMPLETE DIRECTIONS SYSTEM ----
+        let routingControl;
+        const allPlaces = [...puneAreas, ...pcmcAreas, ...allLandmarks];
+        let startCoords = null, endCoords = null;
+
+        function searchLocalDB(query) {
+            const q = query.toLowerCase();
+            return allPlaces.filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
+        }
+
+        async function fetchNominatim(query) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ' Pune India')}&format=json&limit=4&addressdetails=1`);
+                if (!res.ok) return [];
+                return (await res.json()).map(r => ({
+                    name: r.display_name.split(',')[0],
+                    address: r.display_name.split(',').slice(0,3).join(', '),
+                    lat: parseFloat(r.lat),
+                    lng: parseFloat(r.lon)
+                }));
+            } catch { return []; }
+        }
+
+        function showSuggestions(listEl, results, onSelect) {
+            listEl.innerHTML = '';
+            if (!results.length) { listEl.classList.remove('show'); return; }
+            results.forEach(r => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.innerHTML = `<span class="s-icon">📍</span><div><div class="s-label">${r.name}</div><div class="s-sub">${r.address || r.cat || ''}</div></div>`;
+                item.onmousedown = (e) => { e.preventDefault(); onSelect(r); listEl.classList.remove('show'); };
+                listEl.appendChild(item);
+            });
+            listEl.classList.add('show');
+        }
+
+        function setupInputAutocomplete(inputId, listId, onSelect) {
+            const input = document.getElementById(inputId);
+            const list = document.getElementById(listId);
+            let debounceTimer;
+
+            input.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                const q = input.value.trim();
+                if (q.length < 2) { list.classList.remove('show'); return; }
+                debounceTimer = setTimeout(async () => {
+                    const local = searchLocalDB(q);
+                    const remote = local.length < 3 ? await fetchNominatim(q) : [];
+                    const combined = [...local, ...remote].slice(0, 6);
+                    showSuggestions(list, combined, onSelect);
+                }, 250);
+            });
+
+            input.addEventListener('blur', () => setTimeout(() => list.classList.remove('show'), 150));
+            input.addEventListener('focus', () => { if (input.value.trim().length >= 2) list.classList.add('show'); });
+        }
+
+        function checkBothFilled() {
+            document.getElementById('show-dir-btn').disabled = !(startCoords && endCoords);
+        }
+
+        setupInputAutocomplete('start-node', 'start-suggestions', (place) => {
+            document.getElementById('start-node').value = place.name;
+            startCoords = [place.lat, place.lng];
+            checkBothFilled();
+        });
+
+        setupInputAutocomplete('end-node', 'end-suggestions', (place) => {
+            document.getElementById('end-node').value = place.name;
+            endCoords = [place.lat, place.lng];
+            checkBothFilled();
+        });
+
+        document.getElementById('show-dir-btn').onclick = () => {
+            if (!startCoords || !endCoords) return;
+            calculateRoute(startCoords, endCoords);
+        };
+
+        let routeMarkers = [];
+        function clearRouteMarkers() {
+            routeMarkers.forEach(m => map.removeLayer(m));
+            routeMarkers = [];
+        }
+
+        function makeLabelMarker(latlng, label, color, emoji) {
+            const m = L.marker(latlng, {
+                icon: L.divIcon({
+                    className: '',
+                    html: `
+                        <div style="display:flex;flex-direction:column;align-items:center;">
+                            <div style="
+                                background:${color};
+                                color:#fff;
+                                font-size:13px;
+                                font-weight:800;
+                                padding:5px 10px;
+                                border-radius:20px;
+                                white-space:nowrap;
+                                box-shadow:0 2px 8px rgba(0,0,0,0.3);
+                                max-width:160px;
+                                overflow:hidden;
+                                text-overflow:ellipsis;
+                            ">${emoji} ${label}</div>
+                            <div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:10px solid ${color};"></div>
+                        </div>`,
+                    iconSize: [180, 50],
+                    iconAnchor: [90, 50]
+                })
+            }).addTo(map);
+            routeMarkers.push(m);
+            return m;
+        }
+
+        // Tracks distance-label markers separately so they can update on route-click
+        let distanceLabelMarkers = [];
+        function clearDistanceLabels() {
+            distanceLabelMarkers.forEach(m => map.removeLayer(m));
+            distanceLabelMarkers = [];
+        }
+
+        function placeDistanceLabel(coords, mins, km, isPrimary) {
+            if (!coords || coords.length === 0) return;
+            const midLatLng = L.latLng(coords[Math.floor(coords.length / 2)]);
+            const bg   = isPrimary ? '#1a73e8' : '#ff8c00';
+            const html = `<div style="background:${bg};color:#fff;padding:5px 10px;border-radius:16px;font-weight:700;font-size:12px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🚗 ${mins} min · ${km} km</div>`;
+            const m = L.marker(midLatLng, {
+                icon: L.divIcon({ className: '', html, iconSize: [0,0], iconAnchor: [52,12] }),
+                interactive: false,
+                zIndexOffset: isPrimary ? 600 : 500
+            }).addTo(map);
+            distanceLabelMarkers.push(m);
+        }
+
+        function updateRouteInfoPanel(routes, activeIndex) {
+            const info = document.getElementById('route-info');
+            let html = '';
+            const count = Math.min(routes.length, 2);
+            for (let i = 0; i < count; i++) {
+                const r = routes[i];
+                const mins = Math.round(r.summary.totalTime / 60);
+                const km   = (r.summary.totalDistance / 1000).toFixed(1);
+                const isActive = (i === activeIndex);
+                const badge = i === 0 ? 'primary' : 'alt';
+                const activeStyle = isActive ? 'box-shadow:0 0 0 2px #1a73e8;' : 'opacity:0.6;';
+                html += `
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:6px 8px;border-radius:10px;cursor:pointer;transition:background 0.2s;background:${isActive?'#f0f4ff':'transparent'};${activeStyle}"
+                       onclick="selectRoute(${i})" id="route-row-${i}">
+                    <span class="route-badge ${badge}">${i===0?'Fastest':'Alt Route'}</span>
+                    <span style="font-size:13px;font-weight:600;color:#3c4043;">🚗 ${mins} min</span>
+                    <span style="font-size:12px;color:#70757a;">· ${km} km</span>
+                  </div>`;
+            }
+            info.innerHTML = html;
+        }
+
+        let _cachedRoutes = [];
+        let _activeRouteIdx = 0;
+
+        window.selectRoute = function(idx) {
+            if (!_cachedRoutes[idx]) return;
+            _activeRouteIdx = idx;
+            clearDistanceLabels();
+
+            // Style all routes: active = bright, inactive = dimmed
+            _cachedRoutes.forEach((r, i) => {
+                const isPrimary = (i === 0);
+                const isActive  = (i === idx);
+                const mins = Math.round(r.summary.totalTime / 60);
+                const km   = (r.summary.totalDistance / 1000).toFixed(1);
+                if (isActive) placeDistanceLabel(r.coordinates, mins, km, isPrimary);
+            });
+
+            updateRouteInfoPanel(_cachedRoutes, idx);
+
+            // Visual highlight: re-draw via Leaflet layer z-order hack
+            if (routingControl && routingControl._line) {
+                // Let Leaflet handle alternative visibility; just update panel
+            }
+        };
+
+        function calculateRoute(start, end) {
+            if (routingControl) map.removeControl(routingControl);
+            clearRouteMarkers();
+            clearDistanceLabels();
+            _cachedRoutes = [];
+            _activeRouteIdx = 0;
+
+            const info = document.getElementById('route-info');
+            info.innerHTML = '<span style="color:#70757a;font-size:13px;">⏳ Calculating routes...</span>';
+            const startName = document.getElementById('start-node').value || 'Start';
+            const endName   = document.getElementById('end-node').value   || 'Destination';
+
+            makeLabelMarker(L.latLng(start[0], start[1]), startName, '#34a853', '🟢');
+            makeLabelMarker(L.latLng(end[0],   end[1]),   endName,   '#ea4335', '📍');
+
+            // Silence fetch errors (403, network) globally for OSRM
+            const _origFetch = window.fetch;
+            const _origErr   = window.onerror;
+
+            routingControl = L.Routing.control({
+                waypoints: [L.latLng(start[0], start[1]), L.latLng(end[0], end[1])],
+                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+                lineOptions:    { styles: [{ color: '#1a73e8', opacity: 0.95, weight: 7 }] },
+                altLineOptions: { styles: [{ color: '#ff8c00', opacity: 0.85, weight: 6 }] },
+                showAlternatives: true,
+                createMarker: () => null,
+                show: false,
+                collapsible: true,
+                routeWhileDragging: false,
+                fitSelectedRoutes: false,
+                autoRoute: true
+            }).addTo(map);
+
+            routingControl.on('routesfound', (e) => {
+                _cachedRoutes = e.routes.slice(0, 2);
+
+                // Place a distance label on EACH route line
+                _cachedRoutes.forEach((r, i) => {
+                    const mins = Math.round(r.summary.totalTime / 60);
+                    const km   = (r.summary.totalDistance / 1000).toFixed(1);
+                    placeDistanceLabel(r.coordinates, mins, km, i === 0);
+                });
+
+                updateRouteInfoPanel(_cachedRoutes, 0);
+
+                const bounds = L.latLngBounds(_cachedRoutes[0].coordinates);
+                map.fitBounds(bounds, { paddingTopLeft: [420, 60], paddingBottomRight: [40, 40], animate: true, duration: 1 });
+            });
+
+            routingControl.on('routingerror', () => {
+                info.innerHTML = '';
+                showToast('Could not find route. Try different locations.');
+            });
+        }
+
+        function startDirections(destName, destLat, destLng) {
+            if (!drawer.classList.contains('open')) { drawer.classList.add('open'); toggleBtn.textContent = '▲'; }
+            document.querySelector('.shortcut-row').style.display = 'none';
+            document.querySelector('.chips-scroll').style.display = 'none';
+            document.querySelector('.explore-content').style.display = 'none';
+            document.getElementById('directions-overlay').style.display = 'block';
+            document.getElementById('end-node').value = destName;
+            endCoords = [destLat, destLng];
+            // Try geolocation for start
+            navigator.geolocation.getCurrentPosition(pos => {
+                startCoords = [pos.coords.latitude, pos.coords.longitude];
+                document.getElementById('start-node').value = 'Your location';
+                checkBothFilled();
+            }, () => { checkBothFilled(); });
+        }
+
+        document.getElementById('close-dir').onclick = () => {
+            document.getElementById('directions-overlay').style.display = 'none';
+            document.querySelector('.shortcut-row').style.display = 'flex';
+            document.querySelector('.chips-scroll').style.display = 'flex';
+            document.querySelector('.explore-content').style.display = 'block';
+            startCoords = null; endCoords = null;
+            document.getElementById('start-node').value = '';
+            document.getElementById('end-node').value = '';
+            document.getElementById('route-info').textContent = '';
+            document.getElementById('show-dir-btn').disabled = true;
+            clearRouteMarkers();
+            if (routingControl) map.removeControl(routingControl);
+        };
+
+        // UI Element Actions
+        document.getElementById('sc-directions').onclick = () => {
+            if (!drawer.classList.contains('open')) { drawer.classList.add('open'); toggleBtn.textContent = '▲'; }
+            document.querySelector('.shortcut-row').style.display = 'none';
+            document.querySelector('.chips-scroll').style.display = 'none';
+            document.querySelector('.explore-content').style.display = 'none';
+            document.getElementById('directions-overlay').style.display = 'block';
+        };
+        document.getElementById('zoom-in').onclick = () => map.zoomIn();
+        document.getElementById('zoom-out').onclick = () => map.zoomOut();
+        document.getElementById('my-location').onclick = () => {
+            map.locate({ setView: true, maxZoom: 16 });
+            map.on('locationfound', e => L.circle(e.latlng, { radius: 10, color: '#1a73e8' }).addTo(map));
+            map.on('locationerror', () => map.setView([18.5204, 73.8567], 12));
+        };
+
+        // Layer Switcher Logic
+        document.querySelectorAll('.layer-btn').forEach(btn => {
+            btn.onclick = () => {
+                Object.values(tileLayers).forEach(l => map.removeLayer(l));
+                tileLayers[btn.dataset.layer].addTo(map);
+                document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            };
+        });
+
+        // Featured List Injection
+        const featured = allLandmarks.slice(0, 4);
+        const listDiv = document.getElementById('featured-list');
+        featured.forEach(f => {
+            const div = document.createElement('div');
+            div.className = 'place-card';
+            div.innerHTML = `
+                <div class="place-icon">${(categoryColors[f.cat] || '#eee').includes('ea') ? '🏛️' : '🌲'}</div>
+                <div class="place-info">
+                    <div class="place-name">${f.name}</div>
+                    <div class="place-meta">${f.cat} · ★ ${f.rating}</div>
+                </div>
+            `;
+            div.onclick = () => { map.flyTo([f.lat, f.lng], 15); showInfo(f); };
+            listDiv.appendChild(div);
+        });
+
+        // Utilities
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+
+        // Suppress ALL unhandled errors & unhandled promise rejections (403s, CORS, etc.)
+        window.onerror = () => true;
+        window.addEventListener('unhandledrejection', e => e.preventDefault());
+
+        // Override console.error to suppress leaflet routing 403 noise
+        const _ce = console.error.bind(console);
+        console.error = (...args) => {
+            const msg = args.join(' ');
+            if (msg.includes('403') || msg.includes('Routing') || msg.includes('osrm') || msg.includes('route')) return;
+            _ce(...args);
+        };
+    </script>
+</body>
+</html>
