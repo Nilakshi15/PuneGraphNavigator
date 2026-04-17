@@ -1,20 +1,29 @@
-# Metropolitan Navigator: UI/UX Layout v4
+# Metropolitan Navigator: UI/UX Layout
 
-The system has been finalized with a **Unified Control Dashboard** on the right side of the screen, ensuring the primary map data and route visualizations are never obscured.
+To make the system easy to use, I designed a right-side control panel so that the map area remains clear and visible at all times.
 
-## 1. Unified Right-Side Controls
-All interactive components and data displays have been grouped into a single, scrollable dashboard on the right.
-- **Route Optimizer**: Quick selection of origin and destination.
-- **Persistent Infrastructure List**: Instant access to all city hubs.
-- **Journey Timeline Utility**: Once a route is calculated, the step-by-step path pops up directly below the hub list on the right.
+## 1. Right-Side Controls
 
-## 2. Unobstructed Graph & Map
-By moving all UI widgets to the right, the center and left portions of the screen are dedicated entirely to the city's visualization.
-- **Satellite View v2**: Focused city density on the left ensures the background matches the graph placement.
-- **Zero-Overlap Design**: No nodes, edges, or route highlights will ever hide behind dashboard cards.
-- **Neon-Glow Engine**: High-visibility cyan and yellow visuals stand out clearly against the darkened satellite background.
+All main features are placed on the right side:
 
-## 3. How to View
-Open [index.html](file:///c:/Users/DELL-PC/.gemini/antigravity/playground/iridescent-asteroid/index.html) in your browser. Every interaction and result will stay organized on the right, leaving your map view wide and clear.
+* Route selection (source and destination)
+* List of important locations (hubs)
+* Step-by-step path shown after route calculation
 
-![Satellite Background v2](file:///c:/Users/DELL-PC/.gemini/antigravity/playground/iridescent-asteroid/satellite_view_v2.png)
+This helps keep everything organized in one place.
+
+## 2. Clear Map Visualization
+
+The left and center area are fully dedicated to the graph and map:
+
+* No overlapping of UI elements with nodes or edges
+* Routes are clearly visible
+* Dark background is used to highlight paths and nodes
+
+## 3. Design Idea
+
+The main goal was to avoid clutter and make route visualization simple and clear for the user. Keeping controls on one side improves usability and readability.
+
+## 4. How to Run
+
+Open index.html in a browser to view the project.
