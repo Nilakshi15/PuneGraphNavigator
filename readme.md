@@ -1,40 +1,40 @@
 # 🚦 PuneGraphNavigator
 
-PuneGraphNavigator is a graph-based smart navigation system designed for Pune city.
-It focuses on efficient route optimization and zone-based city management using core Data Structures and Algorithms.
+🌐 **Live Demo:**
+https://pune-graph-navigator.vercel.app
 
 ---
 
 ## 🔍 Project Overview
 
-This project models Pune as a graph where:
+PuneGraphNavigator is a smart city-based navigation system designed specifically for Pune.
+It models the city as a graph and computes the most efficient routes using Dijkstra’s Algorithm.
 
-* Nodes represent locations or junctions
-* Edges represent roads with weights (distance/traffic)
-
-It computes the shortest path between locations using Dijkstra’s Algorithm and also supports zone-based traversal for better city management.
+* Nodes → Locations / Junctions
+* Edges → Roads with weights (distance / traffic)
 
 ---
 
 ## ⚙️ Features
 
-* Shortest path calculation between locations
-* Graph-based city representation
-* Zone-wise organization of locations
-* Efficient traversal using BFS
-* Clean UI with right-side control panel (no overlap with map)
+* 📍 Shortest path calculation between locations
+* 🗺️ Graph-based city representation
+* 🏙️ Zone-wise organization using tree structure
+* 🔄 BFS traversal for zone management
+* 🎯 Clean UI with right-side control panel (no overlap with map)
+* 🌐 Live deployed project for real-time usage
 
 ---
 
 ## 🧠 Data Structures Used
 
-| Data Structure                             | Used In              | Why Chosen                                       |
-| ------------------------------------------ | -------------------- | ------------------------------------------------ |
-| Adjacency List (`unordered_map + vector`)  | Graph Construction   | Efficient for sparse graphs, O(V+E) space        |
-| Min-Heap Priority Queue                    | Dijkstra’s Algorithm | Quickly selects minimum distance node (O(log V)) |
-| Arrays (`dist[]`, `visited[]`, `parent[]`) | Dijkstra’s Algorithm | Fast O(1) access for tracking                    |
-| N-ary Tree                                 | Zone Management      | Suitable for hierarchical city zones             |
-| Queue                                      | BFS Traversal        | Enables level-order traversal                    |
+| Data Structure                             | Used In              | Why Chosen                             |
+| ------------------------------------------ | -------------------- | -------------------------------------- |
+| Adjacency List (`unordered_map + vector`)  | Graph Construction   | Efficient for sparse graphs (O(V+E))   |
+| Min-Heap Priority Queue                    | Dijkstra’s Algorithm | Fast minimum node selection (O(log V)) |
+| Arrays (`dist[]`, `visited[]`, `parent[]`) | Dijkstra’s Algorithm | Constant time access                   |
+| N-ary Tree                                 | Zone Management      | Represents hierarchical city zones     |
+| Queue                                      | BFS Traversal        | Level-order traversal                  |
 
 ---
 
@@ -48,30 +48,37 @@ It computes the shortest path between locations using Dijkstra’s Algorithm and
 ## 🛠️ Technologies
 
 * C++
-* Data Structures & Algorithms
-* Graph Theory
+* HTML, CSS, JavaScript (UI)
+* Graph Theory & Data Structures
 
 ---
 
 ## 🎯 Objective
 
-To design an efficient and scalable navigation system that reduces travel time and improves route planning in Pune city.
+To develop an efficient and scalable navigation system that reduces travel time and improves route planning in Pune city.
 
 ---
 
 ## 💡 Innovation
 
 * Combines graph algorithms with zone-based city modeling
-* Focuses specifically on Pune instead of generic maps
-* Organized UI to ensure clear visualization without overlap
+* Designed specifically for Pune instead of generic maps
+* Ensures clean visualization with zero UI overlap
+* Deployed online for real-time interaction
 
 ---
 
-## ▶️ How to Run
+## 📸 Preview
 
-1. Open the project folder
-2. Run the main C++ file OR open `index.html` (for UI)
-3. Select source and destination to view optimized route
+*(Add your project screenshot here)*
+
+---
+
+## ▶️ How to Run Locally
+
+1. Clone the repository
+2. Open the project folder
+3. Run `index.html` in your browser
 
 ---
 
